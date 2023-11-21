@@ -1,8 +1,3 @@
-#### U LANGAGE D'ASSEMBLAGE  
-
-1.  Page 15
-2.  Branchement conditionnel
-
 Branchement conditionnel
 ========================
 
