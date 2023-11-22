@@ -15,9 +15,9 @@ Comme nous l'avons brièvement mentionné dans la section précédente, tous les
 Pour mieux comprendre cela, essayons de démonter le shellcode que nous avons extrait du `Hello World`programme dans la section précédente, en utilisant le même `pwn disasm`outil que nous avons utilisé précédemment :
 
   pwn
-
+```
 $ pwn disasm '48be0020400000000000bf01000000ba12000000b8010000000f05b83c000000bf000000000f05' -c 'amd64' 0 : 48 être 00 20 40 00  00      movabs  rsi , 0x402000 7 : 00  00  00 a : bf 01 00  00  00            mov     edi , 0x1 f : ba 12 00  00  00            mov     edx , 0x12 14 : b8 01 00  00  0 0            mouvement     par axe , 0x1 19 : 0f 05 appel système 1b : b8 3c 00  00  00            mov     eax , 0x3c 20 : bf 00  00  00  00            mov     edi , 0x0 25 : 0f 05 appel système
-
+```
 Nous pouvons voir que les instructions sont relativement similaires au `Hello World`code assembleur que nous avions auparavant, mais elles ne sont pas identiques. Nous voyons qu'il y a une ligne d'instructions vide, ce qui pourrait potentiellement casser le code. De plus, notre `Hello World`chaîne est introuvable. Nous voyons également de nombreux rouges `00`, que nous aborderons dans un instant.
 
 C'est ce qui se passera si notre code assembleur n'est pas `shellcode compliant`et ne répond pas aux exigences `Shellcoding Requirements`. Pour pouvoir produire un shellcode fonctionnel, `Shellcoding Requirements`notre code assembleur doit respecter trois critères principaux :
@@ -116,7 +116,7 @@ Hello HTB Academy!
 Nous voyons que cela fonctionne comme prévu, sans avoir besoin d'utiliser de variables. Nous pouvons le vérifier avec `gdb`pour voir à quoi il ressemble au point d'arrêt :
 
   gdb
-
+```
 $ gdb -q ./helloworld ──────────────────────────────────── ─────── ──────────────────────────────────────── ──── enregistre ────
 $rax : 0x1 $rbx   : 0x5448206f6c6c6548 (" Bonjour HT " ?) $rcx   : 0x0 $rdx : 0x12 $rsp   : 0x00007fffffffe3b8 → "Bonjour HTB Academy !"
 $rbp : 0x0 $rsi   : 0x00007fffffffe3b8 → "Bonjour HTB Academy !"
@@ -126,7 +126,7 @@ $rdi   : 0x1 ──────────────────────�
 0x00007fffffffe3c8 │+0x0010 : 0x0000000000002179 (" y ! " ?) ─────────────────────── ────────────── ──────────────────────────────────────── ──────── code : x86:64 ────
 → 0x40102e <_start+46> appel système
 ─────────────────────────── ──────── ──────────────────────────────────────── ────────── ─────────────────
-
+```
 Comme nous pouvons le constater, la chaîne a été construite progressivement dans la pile et, lorsque nous `rsp`y sommes passés `rsi`, elle contenait l'intégralité de notre chaîne.
 
 * * * * *
@@ -155,9 +155,9 @@ Supprimer NULL
 Les caractères NULL (ou `0x00`) sont utilisés comme terminateurs de chaîne dans le code assembleur et machine. Ainsi, s'ils sont rencontrés, ils entraîneront des problèmes et pourront conduire le programme à se terminer prématurément. Il faut donc s'assurer que notre shellcode ne contient aucun octet NULL `00`. Si nous revenons au `Hello World`démontage de notre shellcode, nous avons remarqué beaucoup de rouge `00`dedans :
 
   pwn
-
+```
 $ pwn disasm '48be0020400000000000bf01000000ba12000000b8010000000f05b83c000000bf000000000f05' -c 'amd64' 0 : 48 être 00 20 40 00  00      movabs  rsi , 0x402000 7 : 00  00  00 a : bf 01 00  00  00            mov     edi , 0x1 f : ba 12 00  00  00            mov     edx , 0x12 14 : b8 01 00  00  0 0            mouvement     par axe , 0x1 19 : 0f 05 appel système 1b : b8 3c 00  00  00            mov     eax , 0x3c 20 : bf 00  00  00  00            mov     edi , 0x0 25 : 0f 05 appel système
-
+```
 Cela se produit généralement lors du déplacement d'un petit entier dans un grand registre, de sorte que l'entier est complété par un supplément `00`pour s'adapter à la taille du plus grand registre.
 
 Par exemple, dans notre code ci-dessus, lorsque nous utilisons `mov rax, 1`, il se déplacera `00 00 00 01`vers `rax`, de telle sorte que la taille du nombre corresponde à la taille du registre. Nous pouvons le voir lorsque nous assemblons l'instruction ci-dessus :
