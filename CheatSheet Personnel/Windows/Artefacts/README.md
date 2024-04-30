@@ -1,9 +1,7 @@
 CheatSheet Forensic
 --------------------
 
-# Artefacts
-
-## Artefacts Internet
+# Artefacts Internet
 
 **Outil** : HindSight
 
@@ -155,8 +153,8 @@ C:\Documents and Settings\\Application\Skype\
 - ZoneID 3 = Internet
 - ZoneID 4 = Untrusted
 
-
-## Artefacts Exécution
+-----------------
+# Artefacts Exécution
 - 120 derniers programmes récemment exécutés
 ```
 C:\Windows\Prefetch
@@ -216,7 +214,7 @@ NTUSER.DAT\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU
 **Outil** : Registry Explorer
 
 
-## Artefacts Fichier/Dossiers
+# Artefacts Fichier/Dossiers
 
 
 ### Open/Save MRU
@@ -303,3 +301,273 @@ NTUSER.DAT\Software\Microsoft\Office\VERSION\Word\FileMRU -> Word/Excel/Powerpoi
 NTUSER.DAT\Software\Microsoft\Windows\CurrentVersion\Explorer\RecentDocs
 ```
 **Outil** : Registry Explorer
+
+# Artefacts réseaux
+
+
+### TimeZone
+- La notion de tranche horaire est très importante car tous les timestamps collectés s’appuient sur cette clé de registre (fichiers de logs). Permet d’établir la timezone du système d’exploitation
+```
+SYSTEM\{CurrentControlSet}\Control\TimeZoneInformation
+```
+**Outil** : Registry explorer
+
+----
+### Configuration IP
+```
+SYSTEM\{CurrentControlSet}\Services\tcpip\parameters\Interfaces\
+```
+**Outil** : Registry explorer
+
+-----
+### Activité / Historique réseau
+- Il est possible d’identifier les réseaux auxquels l’ordinateur s’est connecté. Les réseaux peuvent être filaires ou sans fil. Les informations pouvant être obtenues sont le nom du domaine ainsi que des SSIDs et des adresses MAC (passerelles). Identification des intranets/réseaux. Découverte du nom de domaine et date de la dernière connexion (timestamp d’écriture dans le registre).
+
+```
+HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\NetworkList\
+SOFTWARE\Microsoft\Windows NT\CurrentVersion\NetworkList\Signatures\Unmanage
+SOFTWARE\Microsoft\Windows NT\CurrentVersion\NetworkList\Signatures\Managed
+SOFTWARE\Microsoft\Windows NT\CurrentVersion\NetworkList\Nla\Cache
+```
+**Outil** : Registry explorer
+
+-----
+### Journaux d'événements WLAN
+- Permet de déterminer avec quel(s) wlan le client s’est associé et identifier les caractéristiques de ce réseau. Il est également possible de retrouver l’historique des connections et les SSIDs et BSSIDs (MAC address).
+
+```
+%SYSTEMROOT%\System32\winevt\Logs\Microsoft-Windows-WLAN-AutoConfigOperational.evtx
+%SYSTEMROOT%\System32\winevt\Logs\System.evtx
+```
+
+#### Orational.evtx
+- 11000 : Association à un réseau sans fil démarrée
+- 8001 : Connexion à un réseau sans fil avec succès
+- 8002 : Connexion à un réseau sans fil avec echec
+- 8003 : Déonnexion d'un réseau sans fil
+
+#### System.evtx
+- 6100 : Diagnostic système
+
+**Outil** : EvtxExplorer
+
+
+# Artefacts utilisateurs
+
+
+### Dernière authentification
+```
+SAM\Domains\Account\Users (Non visible avec regedit)
+```
+**Outil** : Registry explorer
+
+
+-----
+### Événements liés au système
+- Le but est d’analyser les services suspects qui démarrent au boot de la machine. Il convient d’inspecter les services démarrés ou stoppés aux alentours de la date de compromission. Énormément utilisent les services pour générer de la persistance. Il est également possible que le malware, de manière volontaire ou non, fasse crasher un service (injection process)
+
+```
+%SYSTEMROOT%\System32\winevt\Logs\System.evtx
+```
+
+#### System.evtx
+- 7034 : Crash d'un service
+- 7036 : Démmarage / Arrêt d'un service
+- 7040 : Type de démmarage modifié
+- 4697 : Service installé sur un système
+- 7045 : Service installé sur un système (Win2008R2+)
+
+**Outil** : EvtxExplorer
+
+
+-----
+### Événements liés aux tâches plannifiées
+
+```
+OS --> C:\Windows\System32\Tasks ou C:\Windows\Tasks
+Registre --> HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Schedule\TaskCache\Tree
+Registre --> HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Schedule\TaskCache\Tasks
+Logs --> C:\Windows\System32\winevt\Logs\Microsoft-Windows-TaskScheduler
+```
+
+**Outil** : EvtxExplorer
+
+
+-----
+### Journaux d'événements Logon : succès / échecs
+- Il est possible de déterminer quel compte s’est connecté à l’OS. Il convient de suivre l’activité des comptes supposés compromis.
+
+```
+%SYSTEMROOT%\System32\winevt\Logs\Security.evtx
+```
+
+#### Security.evtx
+- 4624 : Auth success
+- 4625 : Auth failed
+- 4634 & 4647 : Logout
+- 4648 : Connexion avec : `runas`
+- 4672 : Connexion avec un compte à privileges élevés
+- 4720 : Compte créé
+
+#### RDP
+- 4778 : Session Connected
+- 4779 : Session disconnected
+
+#### NTLM
+- 4776 : Success
+
+#### Kerberos
+- 4768 : Obtention TGT
+- 4769 : Demande d'un TGS
+- 4771 : Echec de pré-auth
+
+```
+L’Event ID 4624 permet d’obtenir des informations spécifiques concernant le type de logon, par rapport à la nature du compte qui se connecte à l’OS. Il sera possible d’extraire la.
+```
+
+2. Logon via session interactive
+3. Logon réseau
+4. Logon via Batch
+5. Windows Service Logon
+7. Credentials pour débloquer l’écran de veille
+8. Logon réseau avec envoi de credentials (en clair)
+9. Credentials différents utilisés par l’utilisateur actuel
+10. Logon RDP
+11. Logon avec credentials en cache
+
+
+**Outil** : EvtxExplorer
+
+# Artefacts USB
+
+### Identification de la clé
+- Les périphériques n’ayant pas un numéro de série unique ont un “&” en second caractère de numéro de série. Les autres numéros de série sont uniques, ce qui veut dire que le constructeur respecte les normes internationales.
+
+```
+SYSTEM\CurrentControlSet\Enum\USBSTOR
+SYSTEM\CurrentControlSet\Enum\USB
+```
+
+Découvrir une lettre associée à un Drive (pluggé à la machine hôte)
+
+Cette technique fonctionne uniquement sur le dernier périphérique associé sur une lettre. Il n’y a pas d’historique ni de liste de clés associées à une lettre.
+
+```
+SYSTEM\CurrentControlSet\Enum\USBSTOR
+​
+
+SYSTEM\MountedDevices
+​
+
+SOFTWARE\Microsoft\Windows Portable Devices\Devices
+​
+```
+
+Les fichiers .lnk (raccourcis) contiennent le numéro de série du volume ainsi que son nom. La clé de registre RecentDocs contient le nom du volume lorsque la clé est explorée depuis Explorer. Il ne s’agit pas du numéro de série de la clé qui est elle codée en dur dans le firmware.
+
+```
+SOFTWARE\Microsoft\WindowsNT\CurrentVersion\EMDMgmt
+```
+
+----
+### Première utilisation / Dernière utilisation
+- Les locations de registre suivantes permettent d’obtenir la liste des périphériques USB branchés au système ainsi que les timestamp, modèle et éditeur
+
+```
+SYSTEM\CurrentControlSet\Enum\USBSTOR
+SYSTEM\CurrentControlSet\Enum\USB
+```
+
+- 0064 = Première installation (Win7-10)
+- 0066 = Dernier branchement (Win8-10)
+- 0067 = Dernier retrait (Win8-10)
+
+Découvrir une lettre associée à un Drive (pluggé à la machine hôte)
+
+Cette technique fonctionne uniquement sur le dernier périphérique associé sur une lettre. Il n’y a pas d’historique ni de liste de clés associées à une lettre.
+
+```
+SYSTEM\CurrentControlSet\Enum\USBSTOR
+​
+
+SYSTEM\MountedDevices
+​
+
+SOFTWARE\Microsoft\Windows Portable Devices\Devices
+​
+```
+
+**Outil** : USBDeview
+
+----
+### Événement plug and play
+- Lorsqu’un driver PnP tente de s’installer sur le système, un événement (ID 20001) est créé et fourni un statut relatif à cet événement. Il est important de noter que cet événement n’est pas uniquement lié à l’USB, mais aussi le firewire, et autres connectiques.
+
+
+#### System.evtx
+
+**Outil** : EvtxExplorer
+
+
+
+----
+### Logs supplémentaires
+- Il est possible de constater des activités liées au branchement d’un périphérique via USB dans les fichiers suivants (Filtrer sur hardware initiated) :
+
+```
+C:\Windows\setupapi.log
+C:\Windows\inf\setupapi.dev.log
+```
+
+- Il suffit de faire une recherche sur le numéro de série pour découvrir les timestamps associés. Ils sont exprimés dans la timezone locale.
+
+```
+\CurrentControlSet\Enum\USBSTOR\Ven_Prod_Version\USBSerial#\Properties\{83da6326...}\####
+```
+
+# Artefacts Fichiers supprimés
+
+### Wordwheelquery
+- Il s’agit des mots clés saisis par l’utilisateur dans la bar de recherche ou le menu démarrer depuis Windows 7. Les mots clés sont au format unicode et listé de manière chronologique dans la sous-clé MRUList.
+
+```
+NTUSER.DAT\Software\Microsoft\Windows\CurrentVersion\Explorer\WordWheelQuery
+```
+
+**Outil** : RegistryExplorer
+
+----
+### Thumb.db
+- Il s’agit d’un fichier caché dans un répertoire. Les miniatures des images et icônes de fichiers sont enregistrées dans le fichier thumbs.db. Ce fichier est créé automatiquement lorsque le partage réseaux homegroup est activé ou lorsqu’un répertoire est accédé via un chemin UNC.
+
+----
+### Thumbcache.db
+- Les miniatures d’images, de documents et répertoires persistent dans une base de données appelée thumbcache.db. Chaque utilisateur a sa propre base. Les miniatures enregistrées sont récupérables en plusieurs formats : small, medium, large, extra-large. Elles sont enregistrée dans l’une de ces catégories en fonction du type d’affichage de l’utilisateur.
+
+```
+%USERPROFILE%\AppData\Local\Microsoft\Windows\Explorer
+```
+
+**Outil** : Thumbcache_viewer
+
+----
+### Corbeille
+- La corbeille contient tout d’abord un répertoire racine contenant des sous-répertoires au noms des SID présents sur la machine. Chaque SID peut être mis en relation avec un utilisateur via le registre ou la commande Get-WmiObject win32_useraccount | Select name, sid
+
+​
+
+Les fichiers commençant par $I files contiennent le chemin d’origine du fichier et la date et heure de suppression
+
+Les fichiers commençant par $R sont les fichiers de sauvegarde des fichiers supprimés
+
+```
+C:\$Recycle.bin
+```
+
+# Artefacts Active Directory
+
+**Import-module ActiveDirectory** : Permet l’import de l’ensemble des Cmdlet nécessaires à l’investigation numérique et la gestion de l’annuaire Active Directory
+
+- Extract des GPO
+- Extractions des comptes à privileges
+- Stratégie de sécurtié & Locked Account
