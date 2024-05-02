@@ -127,6 +127,11 @@ volatility.exe -f dump.mem --profile=Win2016x64 netscan
 volatility.exe -f dump.mem --profile=Win2016x64 procdump -p <pid> -D <DossierDump>
 ```
 
+#### Commandes volatility3
+```powershell
+volatility.exe -f dump.mem windows.memmap.Memmap --pid <pid> --dump
+```
+
 **Outil** : volatility
 
 ---
