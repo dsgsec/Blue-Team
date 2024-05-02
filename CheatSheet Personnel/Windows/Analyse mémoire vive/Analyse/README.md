@@ -12,6 +12,12 @@ CheatSheet Forensic
 ```powershell
 volatility.exe -f dump.mem imageinfo
 ```
+
+#### Commandes volatility3
+```powershell
+volatility.exe -f dump.mem windows.info
+```
+
 **Outil** : volatility
 
 ```
