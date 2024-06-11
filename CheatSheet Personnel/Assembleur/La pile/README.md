@@ -48,9 +48,8 @@ Si l'on empile des feuilles les unes sur les autres, il faudra enlever la derni√
 
 #### Exemple de la pile
 
-Copier le code
-
-`Stackframe 0
+```
+Stackframe 0
 Stackframe 1
 Stackframe 2
 Stackframe 3
@@ -59,7 +58,8 @@ Stackframe 1
 Stackframe 2
 Stackframe 3
 Stackframe 4
-Stackframe 4`
+Stackframe 4
+```
 
 -   **Push** : Ajouter une valeur.
 -   **Pop** : Retirer une valeur.
