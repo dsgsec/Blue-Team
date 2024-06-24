@@ -77,6 +77,11 @@ date +%d/%m/%Y-%H:%M ; sha1sum dump.img
     - SAM
     - Amcache.hve
 
+### ⚠️ IMPORTANT DE BIEN NOTER LA TIMEZONE
+```
+Si la timezone diffère de celle des postes d'analyse cela peut induire en erreur, donc important de noter celle du poste infecté afin d'aligner les outils dessus.
+```
+
 #### Prefetchs
 - C:\Windows\Prefetch
 
