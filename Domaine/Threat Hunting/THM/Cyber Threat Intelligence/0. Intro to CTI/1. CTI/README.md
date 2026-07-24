@@ -1,88 +1,76 @@
-# La CTI
+Threat Intelligence (CTI) --- Notes pour triage L1
+================================================
 
-Un analyste junior se connecte pour leur quart de travail et trouve deux cents nouvelles alertes qui attendent -- tout, des scans de réseau bénin à un Balise qui se sent hors de propos. La file d'attente de billets ne se rythme pas poliment; elle exige des décisions rapides et confiantes. C'est là Il gagne son don.
+Pourquoi c'est utile
+--------------------
 
-Le renseignement sur les menaces fournit le contexte qui aide un analyste à décider laquelle de ces deux cents alertes représente un véritable danger. Avec un contexte fiable, le dépense de l'énergie sur les bons enjeux et dort mieux quand les tableaux de bord sont enfin calmes.
+Aide un analyste à prioriser rapidement parmi un flot d'alertes en répondant à 3 questions :
 
-Concrètement, cherche à répondre à trois questions essentielles:
+1.  **Qui/quoi** est derrière l'indicateur ?
+2.  **Comportement passé** de cette entité ?
+3.  **Comment réagir** maintenant (procédure interne) ?
 
-1.  **Qui, ou quoi, est à l'autre bout de cet indicateur d'alerte?**
-2.  **Quel était leur comportement dans le passé ?**
-3.  **Comment mon organisation répond-elle et que dois-je faire à ce sujet en ce moment?**
+→ Objectif : transformer le triage "au feeling" en décision rapide et justifiée.
 
-Lorsque ces questions sont traitées tôt -- de préférence en quelques minutes -- un analyste de L1 gagne un temps précieux en aval pour la réponse à l'incident () équipe. n'est donc pas le domaine exclusif des spécialistes de l'information; c'est un outil de première ligne qui élève Triage des conjectures à l'action calculée.
+Pyramide Données → Information → Intelligence
+---------------------------------------------
 
-Des données brutes à l'intelligence utilisable
-----------------------------------------------
-
-La littérature sur la sécurité de l'information distingue les **données, l'information** et **l'intelligence**, mais les trois termes se brouillent souvent dans la conversation quotidienne. Les rendre explicites clarifie l'objectif d'un analyste.
-
-| Layer | Définition | Exemple d'alerte-file d'attente | L1 action |
+| Niveau | Définition | Exemple | Action L1 |
 | --- | --- | --- | --- |
-| **Données** | Un non-traitable observable | `45.155.205.3 :443` | Capturez l'artefact. |
-| **Information** | Données plus annotation factuelle | *IP enregistrée à Hetzner, d'abord vue 2023-07-14* | Enregistrer les attributs. |
-| **Intelligence** | Informations analysées qui *répondent à so-what* | *IP appartient à l'actuel BumbleBee C2; bloc immédiatement* | Escalade ou suppression. |
+| **Données** | Observable brut, non actionnable | `45.155.205.3:443` | Capturer l'artefact |
+| **Information** | Donnée + annotation factuelle | IP chez Hetzner, vue depuis 2023-07-14 | Enregistrer les attributs |
+| **Intelligence** | Info analysée qui répond au "so what" | IP = C2 actif de BumbleBee | **Bloquer / escalader** |
 
-Un analyste de niveau 1 est responsable de rendre les artefacts utilisables et de les enrichir jusqu'à ce qu'ils se qualifient comme une intelligence, ou de démontrer qu'ils ne le feront jamais. Cette poussée est édictée **par** l'enrichissement: des recherches rapides et méthodiques de sources publiques, commerciales et internes qui mettent en lumière l'origine, le comportement et la pertinence.
+→ Rôle du L1 : enrichir une donnée jusqu'à l'intelligence, ou prouver qu'elle n'y arrivera jamais.
 
-Lors de l'ascension des données à l'intelligence, trois autres étiquettes deviennent primordiales pour les analystes à connaître.
+Vocabulaire clé à retenir
+-------------------------
 
--   **Indicateur de compromis (CIO**): Preuve d'une violation, telle qu'une adresse C2 dans les journaux.
--   **Indicateur d'attaque (IOA**): Une action malveillante, telle que le lancement d'un service inconnu, est en cours.
--   **Tactics, Techniques, and Procedures (TTP)**: An adversary's detailed methodologies expressed in MITRE ATT&CK IDs and descriptions.
+-   **IOC** (Indicator of Compromise) = preuve qu'une compromission a eu lieu (ex: IP C2 dans les logs)
+-   **IOA** (Indicator of Attack) = action malveillante *en cours* (ex: lancement d'un service inconnu)
+-   **TTP** (Tactics, Techniques, Procedures) = méthodologie de l'adversaire, mappée sur **MITRE ATT&CK**
 
-Indicator Types Essential to First-Line Triage
-----------------------------------------------
+Types d'indicateurs → où enrichir
+---------------------------------
 
-Every artefact demands a tailored enrichment path. Memorising tools is less important than recognising what kind of indicator the alert supplies and knowing where to look. Below, we have a table showing the types of indicators we need to be aware of, with examples:
-
-| Indicator | Example | First Resources | Associated IOA or TTP Examples |
+| Indicateur | Exemple | Ressources d'enrichissement | IOA/TTP associé |
 | --- | --- | --- | --- |
-| **IPv4 / IPv6** | `45.155.205.3` | - WHOIS (ASN, allocation date) - VirusTotal Relations- Shodan banner scan | IOA: Repeated SSH failures : `T1110.003`Password Guessing |
-| **Domaine / FQDN** | `malicious-updates[.]net` | - WHOIS age - RiskIQ or SecurityTrails passive-DNS - urlscan.io | IOA: surge of DNS queries to a 24-hour-old domain |
-| **URL** | `hxxp://malicious-updates[.]net/login` | - URLhaus reputation - urlscan.io behaviour graph - Any.Run dynamic run (network off) | IOA: Browser POST to /gateway.php with payload |
-| **Dossier hachage** | `e99a18c428cb38d5...` | - VirusTotal static & dynamic - Hybrid-Analysis - MalShare corpus | TTP: T1055 Process Injection into regsvr32.exe |
-| **Adresse e-mail** | `billing@evil-corp.com` | - Analyse d'en-tête MXToolbox - Ai-je été pwned | IOA: échec SPF plus enregistrement récent de domaine |
-| **Artefact local** | `HKCU\Software\Run\updater.exe` | - Règles Sigma - requête de prévalence - Base de connaissances des fournisseurs | : T1060.001 Clés d'exécution du registre |
+| IPv4/IPv6 | `45.155.205.3` | WHOIS, VirusTotal Relations, Shodan | T1110.003 (Password Guessing) |
+| Domaine/FQDN | `malicious-updates[.]net` | WHOIS age, DNS passif (SecurityTrails), urlscan.io | Surtension DNS sur domaine récent |
+| URL | `hxxp://.../login` | URLhaus, urlscan.io, Any.Run (réseau off) | POST vers /gateway.php |
+| Hash fichier | `e99a18c428cb38d5...` | VirusTotal, Hybrid-Analysis, MalShare | T1055 Process Injection |
+| Email | `billing@evil-corp.com` | MXToolbox (headers), HaveIBeenPwned | Échec SPF + domaine récent |
+| Artefact local | `HKCU\...\Run\updater.exe` | Règles Sigma, prévalence, KB vendeur | T1060.001 Registry Run Keys |
 
-> **Conseil actionnable.** Maintenir un dossier de signet de navigateur ou un panneau de lanceur qui ouvre vos recherches préférées avec l'indicateur surligné pré-rempli. Les trente secondes économisées par alerte en heures sur un mois.
+**💡 Astuce pratique** : préparer un dossier de signets/lanceur avec recherches pré-remplies par indicateur → gain de temps cumulatif énorme sur un mois.
 
-Flux, plateformes et pourquoi la distinction compte
----------------------------------------------------
+Feed vs Platform
+----------------
 
-Most SOCs do not build or have intelligence in-house. The insights must be integrated and ingested from reliable sources.
+-   **Feed** : flux d'indicateurs programmé (CSV, STIX/TAXII). ⚠️ Trop de feeds non curés = bruit + perte de confiance.
+-   **Platform** (TIP) : dépôt structuré, stocke/enrichit/relie les indicateurs, gère les droits de partage (ex: MISP, OpenCTI).
+-   Bonne pratique : tester un feed → valider l'alignement avec le modèle de menace → promouvoir sur la plateforme seulement si actionnable. La plateforme = source unique de vérité.
 
-**Feed**: A scheduled stream of indicators, usually delivered in various formats such as CSV, , STIX, or through TAXII. Over-ingesting feeds without curation drowns analysts in false positives and erodes trust in the programme.
+4 sources de cyber-intel
+------------------------
 
-**Platform**Plate-forme: Un dépôt structuré qui stocke les indicateurs, suit l'enrichissement, cartographie les relations et applique les autorisations de partage. **[](https://tryhackme.com/room/misp)**et **[OpenCTI](https://tryhackme.com/room/opencti)** sont des exemples open source.
+1.  **Télémétrie interne** (logs, détections, soumissions mailbox) --- pertinence immédiate max
+2.  **Services commerciaux** (feeds premium, sandbox payants) --- haute fidélité, mais limites de licence/partage
+3.  **OSINT** (AbuseIPDB, URLhaus, blogs, recherche académique) --- à croiser/valider avant usage
+4.  **Communautés/ISAC** (ex: FS-ISAC) --- listes sectorielles avec contexte riche
 
-Son La pratique introduit **progressivement** les flux, confirme qu'ils s'alignent sur le modèle de menace de l'organisation et ne les promeut sur la plate-forme qu'après avoir mesuré l'actionnabilité. La plate-forme devient alors la source unique de vérité -- un analyste l'interroge d'abord, assurant que les biographies d'indicateurs évoluent plutôt que de fourcher.
+4 classifications de Threat Intelligence
+----------------------------------------
 
-Sources de cyber-espionnage
----------------------------
+| Type | Portée | Exemple |
+| --- | --- | --- |
+| **Stratégique** | Haut niveau, tendances, décisions business | Rapport annuel sur montée des ransomwares |
+| **Tactique** | Analyse des TTP adverses | Note sur abus de T1059.005 (VBA) dans malspam |
+| **Opérationnelle** | Détails de campagne, motifs/intentions | Identification des actifs ciblés (personnes/process/tech) |
+| **Technique** | Indicateurs atomiques | IOC, hashes liés à une attaque |
 
-Le renseignement n'est aussi digne de confiance que sa source, car il suscite la crédibilité et dirige la révision juridique si un plus tard déclenche une perturbation d'entreprise. En tant qu'analyste, vous devez savoir et noter d'où provient chaque indicateur.
+**Rôle du L1** : agrège les IOC techniques, observe/documente les IOA tactiques, remonte des patterns pour les rapports opérationnels.
 
-Il y a quatre grandes sources que vous rencontrerez dans votre pratique:
+* * * * *
 
--   **Télémétrie interne:** des logs, détections, -les soumissions de boîte aux lettres offrent la plus grande pertinence immédiate.
--   **Services commerciaux:** flux premium fournisseurs, bacs à sable payants**,** et analyses de source fermée. Ceux-ci fournissent une grande fidélité, mais peuvent avoir des limites d'exportation et de partage basées sur la licence.
--   **Intelligence open source (:** AbuseIPDB, URLhaus, blogs publics avec CIOs, et recherche académique. Avant d'appliquer, les informations provenant de ces sources devront être confirmées de manière croisée.
--   **Communautés et** ISAC: Listes sectorielles marquées d'étiquettes et de contexte riche (p. ex., FS-ISAC)
-
-Classifications de renseignement sur les menaces
-------------------------------------------------
-
-![Un analyste qui examine les quatre classes de renseignement sur les menaces.](https://cdn-images.tryhackme.com/user-uploads/5fc2847e1bbebc03aa89fbf2/room-content/cd207b841ee45fd4e62eaf4266cc06ae.png)
-
-L'intelligence de la menace vise à comprendre la relation entre votre environnement opérationnel et votre adversaire. Dans cet esprit, nous pouvons décomposer les informations de menace en classifications suivantes:
-
--   **Intel** stratégique: Des renseignements de haut niveau qui examinent le paysage des menaces de l'organisation et cartographient les domaines de risque en fonction des tendances, des modèles et des menaces émergentes qui peuvent avoir un impact sur les décisions des entreprises. Un exemple est un rapport annuel sur les tendances des ransomwares prédisant un passage à l'extorsion d'effacement des données dans les soins de santé.
-
--   **Intel** tactique: Évaluations des comportements des adversaires par l'analyse de tactiques, de techniques et de procédures (TTP). Cela peut prendre la forme de notes consultatives, telles que le détail du nouvel abus T1059.005 (Visual Basic) dans le malspam.
-
--   **Information** opérationnelle: Détails spécifiques à la campagne sur les motifs et l'intention d'effectuer une attaque. Ceci est utile pour comprendre les actifs essentiels disponibles dans l'organisation (personnes, processus et technologies) qui peuvent être ciblés.
-
--   **Intel technique** : Indicateurs atomiques et artefacts tels que et des hachages liés à une attaque.
-
-Les analystes de L1 aggraveront de nombreux CIO techniques, observeront et documenteront les IOA tactiques et identifieront les modèles qui alimentent les rapports opérationnels.
+*Points à retenir absolument : la pyramide Données/Info/Intelligence, la différence IOC vs IOA vs TTP, et le tableau indicateur → ressource d'enrichissement.*
